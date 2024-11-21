@@ -32,11 +32,11 @@ on:
         default: false
 
 jobs:
-
   guard_clause:
+      environment: github-action
       runs-on: self-hosted
       env:
-        GH_TOKEN: ${{ github.token }} # As required by the GitHub-CLI  
+        GH_TOKEN: ${{ secrets.PAT }} 
 
       permissions:
         actions: 'write' # Required in order to terminate the workflow run.
