@@ -1,6 +1,7 @@
-FROM --platform=i386 bitnami/minideb:bullseye as build
+FROM --platform=i386 i386/debian:buster as build
+ARG DEBIAN_FRONTEND=noninteractive
 
-RUN install_packages \
+RUN apt-get update && apt-get install -y \
       curl \
       wget\
       ca-certificates \
@@ -39,7 +40,7 @@ RUN /build/ctl.sh build_browsh_binary $BASE
 ###########################
 # Actual final Docker image
 ###########################
-FROM --platform=i386 bitnami/minideb:bullseye
+FROM --platform=i386 i386/debian:buster
 
 ENV HOME=/app
 WORKDIR $HOME
@@ -47,7 +48,7 @@ WORKDIR $HOME
 COPY --from=build /go-home/src/browsh/interfacer/browsh /app/bin/browsh
 
 
-RUN install_packages \
+RUN apt-get update && apt-get install -y \
       xvfb \
       libgtk-3-0 \
       curl \
