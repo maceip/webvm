@@ -148,8 +148,9 @@ jobs:
       # We create and mount the base ext2 image to extract the Docker container's filesystem its contents into.
       - name: Create ext2 image.
         run: |
+         cd /opt && find . -maxdepth 1 -mindepth 1 '!' -path ./containerd '!' -path ./actionarchivecache '!' -path ./runner '!' -path ./runner-cache -exec rm -rf '{}' ';'
          # Preallocate space for the ext2 image
-         sudo fallocate -l $IMAGE_SIZE ${IMAGE_NAME}
+         cd - && sudo fallocate -l $IMAGE_SIZE ${IMAGE_NAME}
          # Format to ext2 linux kernel revision 0
          sudo mkfs.ext2 -r 0 ${IMAGE_NAME}
          # Mount the ext2 image to modify it
