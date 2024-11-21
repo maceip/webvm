@@ -1,4 +1,4 @@
-FROM bitnami/minideb:bullseye as build
+FROM --platform=i386 bitnami/minideb:bullseye as build
 
 RUN install_packages \
       curl \
@@ -39,7 +39,7 @@ RUN /build/ctl.sh build_browsh_binary $BASE
 ###########################
 # Actual final Docker image
 ###########################
-FROM bitnami/minideb:bullseye
+FROM --platform=i386 bitnami/minideb:bullseye
 
 ENV HOME=/app
 WORKDIR $HOME
