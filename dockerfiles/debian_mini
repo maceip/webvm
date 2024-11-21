@@ -16,7 +16,8 @@ RUN apt-get update && apt-get install -y \
       pkg-config \
       libprotobuf-dev \
       make \
-      bzip2
+      bzip2 \
+      gcc-multilib
 
 # Helper scripts
 WORKDIR /build
