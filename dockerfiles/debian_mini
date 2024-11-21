@@ -1,21 +1,91 @@
-FROM --platform=i386 i386/debian:buster
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get clean && apt-get update && apt-get -y upgrade
-RUN apt-get -y install apt-utils gcc \
-	python3 vim unzip ruby nodejs \
+FROM bitnami/minideb:bullseye as build
+
+RUN install_packages \
+      curl \
+      wget\
+      ca-certificates \
+      git \
+      autoconf \
+      automake \
+      g++ \
+      protobuf-compiler \
+      zlib1g-dev \
+      libncurses5-dev \
+      libssl-dev \
+      pkg-config \
+      libprotobuf-dev \
+      make \
+      bzip2
+
+# Helper scripts
+WORKDIR /build
+ADD .git .git
+ADD .github .github
+ADD scripts scripts
+ADD ctl.sh .
+
+# Install Golang and Browsh
+ENV GOROOT=/go
+ENV GOPATH=/go-home
+ENV PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+ENV BASE=$GOPATH/src/browsh/interfacer
+ADD interfacer $BASE
+WORKDIR $BASE
+RUN /build/ctl.sh install_golang $BASE
+RUN wget -P "$BASE" "https://github.com/browsh-org/browsh/releases/download/v1.8.3/browsh-1.8.3.xpi"
+RUN mv "$BASE/browsh-1.8.3.xpi" "$BASE/src/browsh/browsh.xpi"
+RUN /build/ctl.sh build_browsh_binary $BASE
+
+###########################
+# Actual final Docker image
+###########################
+FROM bitnami/minideb:bullseye
+
+ENV HOME=/app
+WORKDIR $HOME
+
+COPY --from=build /go-home/src/browsh/interfacer/browsh /app/bin/browsh
+
+RUN install_packages \
+      xvfb \
+      libgtk-3-0 \
+      curl \
+      ca-certificates \
+      libdbus-glib-1-2 \
+      procps \
+      libasound2 \
+      libxtst6 \
+      firefox-esr \
+      python3 vim unzip ruby nodejs \
 	fakeroot dbus base whiptail hexedit \
 	patch wamerican ucf manpages \
 	file luajit make lua50 dialog curl \
-	less cowsay netcat-openbsd wget firefox-esr
-RUN wget https://github.com/browsh-org/browsh/releases/download/v1.8.0/browsh_1.8.0_linux_amd64.deb
-RUN apt install ./browsh_1.8.0_linux_amd64.deb
-RUN rm ./browsh_1.8.0_linux_amd64.deb
-RUN useradd -m user && echo "user:password" | chpasswd
-COPY --chown=user:user ./examples /home/user/examples
-RUN chmod -R +x  /home/user/examples/lua
-# We set WORKDIR, as this gets extracted by Webvm to be used as the cwd. This is optional.
-WORKDIR /home/user/
-# We set env, as this gets extracted by Webvm. This is optional.
-ENV HOME="/home/user" TERM="xterm" USER="user" SHELL="/bin/bash" EDITOR="vim" LANG="en_US.UTF-8" LC_ALL="C"
+	less cowsay netcat-openbsd
+
+# Block ads, etc. This includes porn just because this image is also used on the
+# public SSH demo: `ssh brow.sh`.
+#RUN curl \
+#  -o /etc/hosts \
+#  https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts
+
 RUN echo 'root:password' | chpasswd
-CMD [ "browsh" ]
+
+# Don't use root
+RUN useradd -m user --home /app  && echo "user:password" | chpasswd
+RUN chown user:user /app
+USER user
+
+ENV PATH="${HOME}/bin:${HOME}/bin/firefox:${PATH}"
+ENV HOME="/app" TERM="xterm" USER="user" SHELL="/bin/bash" EDITOR="vim" LANG="en_US.UTF-8" LC_ALL="C"
+
+# Firefox behaves quite differently to normal on its first run, so by getting
+# that over and done with here when there's no user to be dissapointed means
+# that all future runs will be consistent.
+RUN TERM=xterm script \
+  --return \
+  -c "/app/bin/browsh" \
+  /dev/null \
+  >/dev/null & \
+  sleep 10
+
+ENTRYPOINT ["/app/bin/browsh"]
