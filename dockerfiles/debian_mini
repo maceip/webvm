@@ -16,7 +16,8 @@ RUN apt-get -y install apt-utils gcc \
       pkg-config \
       libprotobuf-dev \
       make \
-      bzip2
+      bzip2  gcc-multilib
+
 # Helper scripts
 WORKDIR /build
 ADD .git .git
