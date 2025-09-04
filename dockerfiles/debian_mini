@@ -8,7 +8,7 @@ RUN apt-get -y install apt-utils gcc git \
 RUN useradd -m user && echo "user:password" | chpasswd
 
 # Install Claude Code globally
-RUN npm install -g @anthropic-ai@claude-code
+RUN npm install -g @anthropic-ai/claude-code
 
 # We set WORKDIR, as this gets extracted by Webvm to be used as the cwd. This is optional.
 WORKDIR /home/user/
